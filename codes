@@ -1,6 +1,6 @@
-#Telcho Churn Data Analysis
+# Telcho Churn Data Analysis
 
-#imports
+# imports
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -21,9 +21,10 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 pd.set_option('display.width', 500)
 
-df = pd.read_csv("dataset\Telco-Customer-Churn.csv")
+df=pd.read_csv("Telco-Customer-Churn.csv")
 
-#First Look at Data
+
+# First Look at Data
 
 def check_df(dataframe, head=5):
     print("##################### Shape #####################")
@@ -38,14 +39,15 @@ def check_df(dataframe, head=5):
     print(dataframe.isnull().sum())
     print("##################### Quantiles #####################")
     print(dataframe.describe([0, 0.05, 0.50, 0.95, 0.99, 1]).T)
-check_df(df)
 
+
+check_df(df)
 
 df.TotalCharges = pd.to_numeric(df.TotalCharges, errors='coerce')
 
-def grab_col_names(dataframe, cat_th=10, car_th=20)
 
-    # cat_cols, cat_but_car
+def grab_col_names(dataframe, cat_th=10, car_th=20):
+
     cat_cols = [col for col in dataframe.columns if dataframe[col].dtypes == "O"]
     num_but_cat = [col for col in dataframe.columns if dataframe[col].nunique() < cat_th and
                    dataframe[col].dtypes != "O"]
@@ -54,7 +56,6 @@ def grab_col_names(dataframe, cat_th=10, car_th=20)
     cat_cols = cat_cols + num_but_cat
     cat_cols = [col for col in cat_cols if col not in cat_but_car]
 
-    # num_cols
     num_cols = [col for col in dataframe.columns if dataframe[col].dtypes != "O"]
     num_cols = [col for col in num_cols if col not in num_but_cat]
 
@@ -66,40 +67,46 @@ def grab_col_names(dataframe, cat_th=10, car_th=20)
     print(f'num_but_cat: {len(num_but_cat)}')
     return cat_cols, num_cols, cat_but_car
 
+
 cat_cols, num_cols, cat_but_car = grab_col_names(df)
 
 cat_cols
 num_cols
 
-df["Churn"] = df["Churn"].map({'No':0,'Yes':1})
+df["Churn"] = df["Churn"].map({'No': 0, 'Yes': 1})
 df["Churn"].value_counts()
 
-def target_summary_with_cat(dataframe,target,categorical_col):
+
+def target_summary_with_cat(dataframe, target, categorical_col):
     print(pd.DataFrame({"CHURN_MEAN": dataframe.groupby(categorical_col)[target].mean()}))
     print("*20")
 
+
 for col in cat_cols:
-    target_summary_with_cat(df,"Churn",col)
-    
-def target_vs_category_visual(dataframe,target, categorical_col):
-    plt.figure(figsize=(15,8))
-    sns.histplot(x=target,hue=categorical_col, data=dataframe,element="step",multiple="dodge")
+    target_summary_with_cat(df, "Churn", col)
+
+
+def target_vs_category_visual(dataframe, target, categorical_col):
+    plt.figure(figsize=(15, 8))
+    sns.histplot(x=target, hue=categorical_col, data=dataframe, element="step", multiple="dodge")
     plt.title("State of Categorical Variables according to Churn ")
     plt.show()
 
+
 for col in cat_cols:
-    target_vs_category_visual(df,"Churn",col)
-    
-    
-  def target_summary_with_num(dataframe,target, numerical_col):
-    print(dataframe.groupby(target).agg({numerical_col:"mean"}), end="\n\n")
+    target_vs_category_visual(df, "Churn", col)
+
+
+def target_summary_with_num(dataframe, target, numerical_col):
+    print(dataframe.groupby(target).agg({numerical_col: "mean"}), end="\n\n")
     print("###################################")
-    
+
 
 for col in num_cols:
-    target_summary_with_num(df,"Churn",col)
- 
- def outlier_thresholds(dataframe, col_name, q1=0.05, q3=0.95):
+    target_summary_with_num(df, "Churn", col)
+
+
+def outlier_thresholds(dataframe, col_name, q1=0.05, q3=0.95):
     quartile1 = dataframe[col_name].quantile(q1)
     quartile3 = dataframe[col_name].quantile(q3)
     interquantile_range = quartile3 - quartile1
@@ -107,16 +114,6 @@ for col in num_cols:
     low_limit = quartile1 - 1.5 * interquantile_range
     return low_limit, up_limit
 
-
-# Outliers
-
-def outlier_th(dataframe, col_name, q1=0.05, q3=0.95):
-    quartile1 = dataframe[col_name].quantile(q1)
-    quartile3 = dataframe[col_name].quantile(q3)
-    interquantile_range = quartile3 - quartile1
-    up_limit = quartile3 + 1.5 * interquantile_range
-    low_limit = quartile1 - 1.5 * interquantile_range
-    return low_limit, up_limit
 
 def check_outlier(dataframe, col_name):
     low_limit, up_limit = outlier_thresholds(dataframe, col_name)
@@ -124,37 +121,42 @@ def check_outlier(dataframe, col_name):
         return True
     else:
         return False
+
+
 for col in num_cols:
     print(col, check_outlier(df, col))
-    
+
+
 def replace_with_thresholds(dataframe, variable):
-    low_limit, up_limit = outlier_th(dataframe, variable)
+    low_limit, up_limit = outlier_thresholds(dataframe, variable)
     dataframe.loc[(dataframe[variable] < low_limit), variable] = low_limit
     dataframe.loc[(dataframe[variable] > up_limit), variable] = up_limit
-    
- for col in num_cols:
+
+
+for col in num_cols:
     print(col, check_outlier(df, col))
-    
- for col in num_cols:
-    replace_with_thresholds(df, col)   
-    
-  for col in num_cols:
+
+for col in num_cols:
+    replace_with_thresholds(df, col)
+
+for col in num_cols:
     print(col, check_outlier(df, col))
-    
+
 # Visulation
-    
- def target_density_est_with_num(dataframe,target, numerical_col):
-    plt.figure(figsize=(15,8))
+def target_density_est_with_num(dataframe, target, numerical_col):
+    plt.figure(figsize=(15, 8))
     ax = sns.kdeplot(df[col][df.Churn == 1], color="blue", shade=True)
     sns.kdeplot(df[col][df.Churn == 0], color="yellow", shade=True)
     plt.legend(['Leave', 'Not Leave'])
-    plt.xlim(-10,120)
+    plt.xlim(-10, 120)
     plt.title("Churn Density of Numerical Variables")
     plt.show()
-    
+
+
 for col in num_cols:
-    target_density_est_with_num(df,"Churn",col)
-    
+    target_density_est_with_num(df, "Churn", col)
+
+
 def missing_values_table(dataframe, na_name=False):
     na_columns = [col for col in dataframe.columns if dataframe[col].isnull().sum() > 0]
 
@@ -166,39 +168,98 @@ def missing_values_table(dataframe, na_name=False):
     if na_name:
         return na_columns
 
+
 missing_values_table(df)
 
-#na_cols = missing_values_table(df, True)
+# na_cols = missing_values_table(df, True)
 
 df.dropna(inplace=True)
 
 corr_matrix = df[num_cols].corr()
 corr_matrix
 
-plt.figure(figsize=(15,8))
-sns.heatmap(df.corr(),annot=True)
+plt.figure(figsize=(15, 8))
+sns.heatmap(df.corr(), annot=True)
 
+scaler = RobustScaler()  # Medyanı çıkar iqr'a böl.
+df[num_cols] = scaler.fit_transform(df[num_cols])
+df.head()
 
-#model
-y = df["Churn"]
-X = df.drop(["Churn","customerID"], axis=1)
+def one_hot_encoder(dataframe, categorical_cols, drop_first=False):
+    dataframe = pd.get_dummies(dataframe, columns=categorical_cols, drop_first=drop_first)
+    return dataframe
+dff = one_hot_encoder(df, cat_cols, drop_first=True)
+dff.head()
+
+# model
+y = dff["Churn_1"]
+X = dff.drop(["customerID", "Churn_1"], axis=1)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=17)
 rf_model = RandomForestClassifier(random_state=46).fit(X_train, y_train)
 y_pred = rf_model.predict(X_test)
 accuracy_score(y_pred, y_test)
+#Out[78]: 0.79478672985782
 
-#features desicion tree classifier
-for col in binary_cols:
-    df = label_encoder(df, col)
-def plot_importance(model, features,modelName, num=len(X)):
+
+primitive_success=[]
+model_names=[]
+y=dff['Churn_1']
+X = dff.drop(["customerID","Churn_1"], axis=1)
+from sklearn.model_selection import train_test_split
+X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.30)
+
+def ML(algName):
+
+    # Model Building / Training
+    model=algName().fit(X_train,y_train)
+    model_name=algName.__name__
+    model_names.append(model_name)
+    # Prediction
+    y_pred=model.predict(X_test)
+    # primitive-Success / Verification Score
+    from sklearn.metrics import accuracy_score
+    primitiveSuccess=accuracy_score(y_test,y_pred)
+    primitive_success.append(primitiveSuccess)
+    return  primitive_success,model_names,model
+
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder, StandardScaler, RobustScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+
+models=[KNeighborsClassifier,SVC,MLPClassifier,DecisionTreeClassifier,RandomForestClassifier,GradientBoostingClassifier,LogisticRegression]
+for i in models:
+    ML(i)
+
+
+classification=pd.DataFrame( primitive_success,columns=
+                                 ['accuracy_Score'],index=[model_names]).sort_values(by='accuracy_Score',ascending=False)
+classification
+
+#                            accuracy_Score
+#LogisticRegression                   0.809
+#GradientBoostingClassifier           0.803
+#SVC                                  0.798
+#MLPClassifier                        0.793
+#RandomForestClassifier               0.792
+#KNeighborsClassifier                 0.770
+#DecisionTreeClassifier               0.738
+
+def plot_importance(model, features, modelName, num=len(X)):
     feature_imp = pd.DataFrame({'Value': model.feature_importances_, 'Feature': features.columns})
     plt.figure(figsize=(10, 10))
     sns.set(font_scale=1)
-    sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value",ascending=False)[0:num])
-    plt.title('Features'+ ' - ' + modelName.__name__ )
+    sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False)[0:num])
+    plt.title('Features' + ' - ' + modelName.__name__)
     plt.tight_layout()
     plt.show()
 
+
 for i in models[3:]:
-    model=i().fit(X_train,y_train)
-    plot_importance(model, X_train,i)
+    model = i().fit(X_train, y_train)
+    plot_importance(model, X_train, i)
